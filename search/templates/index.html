@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}
+US Stock Search
+{% endblock title %}
+
+{% block result %}
+<fieldset class="scheduler-border">
+    <legend class="scheduler-border">Result</legend>
+    <div id="result_field"></div>
+</fieldset>
+{% endblock result %}
+
+
+{% block chart %}
+<canvas id="myChart" width="700" height="400"></canvas>    
+{% endblock chart %}
+    
+
+{% block javascript %}
+<script>
+    $('#search_form').on('submit', function(event) {
+        event.preventDefault()
+        console.log("form submitted!")
+        search_stock()
+    })
+
+    // AJAX for post
+    function search_stock() {
+        console.log("searching is working!")
+        $('#result_field').empty()
+        $.ajax({
+            url: "result",
+            type: "POST",
+            data: {
+                code: $('#id_code').val(),
+                start: $('#id_start').val(),
+                end: $('#id_end').val(),
+            },
+
+            // handle a successful response
+            success : function(json) {
+                let length = json.length
+                const labels = []
+                const chart_data = []
+                const max_period = []
+                for (let i in json) {
+                    let result = '<p>'+ json[i]['date'] + ' ' + json[i]['close'] + '</p>'
+                    labels.unshift(json[i]['date'])
+                    chart_data.unshift(json[i]['close'])
+                    $('#result_field').append(result)
+                }
+                
+                let max_profit = calculateMaxProfit(chart_data)
+                console.log(max_profit)
+                $('#result_field').prepend('<strong>Max Profit: '+ max_profit['profit'].toFixed(2) + '</strong>' )
+                if(max_profit['profit'] > 0) {
+                    for(let i = 0; i < chart_data.length; i++) {
+                        if(i >= max_profit['start'] && i <= max_profit['end']) {
+                            max_period.push(chart_data[i])
+                            continue
+                        }
+                        if(i > max_profit['end']) {
+                            break
+                        }
+                        max_period.push(null)
+                    }
+                }
+
+                console.log(max_period)
+
+                let ctx = document.getElementById("myChart").getContext('2d');
+
+                let myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Max Profit',
+                            data: max_period,
+                            backgroundColor: [
+                                'rgba(255, 0, 0, 0.2)',
+                            ],
+                            borderColor: [
+                                'rgba(255, 0, 0, 1)',
+                            ],
+                            borderWidth: .5
+                        },{
+                            label: 'Overall Performance',
+                            data: chart_data,
+                            backgroundColor: [
+                                'rgba(54, 162, 235, 0.2)',
+                            ],
+                            borderColor: [
+                                'rgba(54, 162, 235, 1)',
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero:false
+                                }
+                            }]
+                        }
+                    }
+                });
+                console.log("success") // sanity check
+            },
+
+            // handle a non-successful response
+            error : function(xhr,errmsg,err) {
+                $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
+                    " <a href='#' class='close'>&times;</a></div>") // add the error to the dom
+                console.log(xhr.status + ": " + xhr.responseText) // provide a bit more info about the error to the console
+            },
+        })
+    }
+
+    // function to handle the algorithem of max profit calculation
+    function calculateMaxProfit(chart_data) {
+
+        let max_in_data = Math.max.apply(null, chart_data)
+        let max_profit_period = {
+            'profit': .0,
+            'start': 0,
+            'end': 0,
+        }
+        
+        let data_len = chart_data.length
+        
+        for(let i = 0; i < data_len; i++) {
+
+            if(chart_data[i] == max_in_data) continue
+
+            for(let j = i+1; j < data_len; j++) {
+
+                if(chart_data[i] < chart_data[j]) {
+                    let profit = chart_data[j] - chart_data[i]
+                    if(max_profit_period['profit'] < profit) {
+                        max_profit_period['profit'] = profit
+                        max_profit_period['start'] = parseInt(i)
+                        max_profit_period['end'] = parseInt(j)
+                    }
+                }    
+
+            }
+        }
+        return max_profit_period
+    }
+</script>
+{% endblock javascript %}
+

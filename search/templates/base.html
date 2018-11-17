@@ -1,0 +1,63 @@
+<!doctype html>
+{% load static %}
+<html>
+    <head>
+        <title>{% block title %}
+        
+        {% endblock title %}</title>
+        <link rel="stylesheet" type="text/css" href="{% static 'css/app.css' %}"/>
+        <script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js"></script>
+        <script src="{% static 'js/app.js' %}"></script>
+    </head>
+    
+    <body>
+        <div id="header">
+            <div id="branding">
+                <h1 id="site-name">US Stock Searching System</a></h1>
+            </div>
+        </div>
+    
+        <div id="content">
+            <div class="content-main">
+                <form action="result" method="post" id='search_form'>{% csrf_token %}
+                    <fieldset class="scheduler-border">
+                        <legend class="scheduler-border">Search Stock</legend>
+                        <div class="info">
+                                <label>Code: </label>
+                                <select name="code" id="id_code">
+                                    {% for code in stock_codes %}
+                                        <option value="{{code}}">{{code}}</option>
+                                    {% endfor %}
+                                </select>
+                        </div>
+                        <div class="info">
+                                <label>Start: </label>
+                                <input type="date" name="start" required id="id_start" class="iput_box">
+                        </div>
+                        <div class="info">
+                                <label>End: </label>
+                                <input type="date" name="end" required id="id_end" class="iput_box">
+                        </div>
+                    </fieldset>
+                    <div id="search">
+                        <input type="submit" value="Search" name="_search" id="search_button">
+                    </div>
+                </form>
+            </div>
+
+            <div class="content-main">
+                {% block result %}{% endblock %}
+            </div>
+
+            <div class="content-main">
+                {% block chart %}
+                  
+                {% endblock chart %}
+            </div>
+        </div>    
+        {% block javascript %}
+        {% endblock javascript %}           
+    </body>
+</html>
